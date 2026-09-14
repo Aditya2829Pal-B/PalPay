@@ -1,0 +1,10 @@
+{
+  "name": "AI Trivia Master",
+  "description": "A dynamic trivia game featuring AI hosts with unique personalities, text-to-speech, and real-time live voice calling.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

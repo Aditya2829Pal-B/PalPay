@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GameSettings, TriviaQuestion } from '../types';
-import { Volume2, Loader2, ArrowRight } from 'lucide-react';
+import { Volume2, Loader2, ArrowRight, AlertTriangle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { saveScore } from '../lib/scoreStore';
 
@@ -12,6 +12,7 @@ interface Props {
 export default function ClassicGame({ settings, onExit }: Props) {
   const [question, setQuestion] = useState<TriviaQuestion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   
@@ -20,6 +21,7 @@ export default function ClassicGame({ settings, onExit }: Props) {
 
   const fetchQuestion = async () => {
     setLoading(true);
+    setError(null);
     setSelectedAnswer(null);
     try {
       const res = await fetch('/api/trivia', {
@@ -27,10 +29,22 @@ export default function ClassicGame({ settings, onExit }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personality: settings.personality, category: settings.category })
       });
+      
       const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate question.");
+      }
+      
+      if (!data.options || !Array.isArray(data.options)) {
+        throw new Error("Received malformed question data.");
+      }
+      
       setQuestion(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setError(e.message || "An unexpected error occurred. Please try again.");
+      setQuestion(null);
     } finally {
       setLoading(false);
     }
@@ -68,14 +82,15 @@ export default function ClassicGame({ settings, onExit }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voice: settings.voice })
       });
-      const { audio } = await res.json();
+      const data = await res.json();
       
-      if (!audio) throw new Error("No audio returned");
+      if (!res.ok) throw new Error(data.error || "No audio returned");
+      if (!data.audio) throw new Error("No audio returned");
 
       if (!audioContextRef.current) {
         audioContextRef.current = new AudioContext({ sampleRate: 24000 });
       }
-      const binary = atob(audio);
+      const binary = atob(data.audio);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) {
         bytes[i] = binary.charCodeAt(i);
@@ -102,6 +117,7 @@ export default function ClassicGame({ settings, onExit }: Props) {
     } catch (e) {
       console.error("TTS playback failed:", e);
       setIsPlayingAudio(false);
+      alert("Voice playback is currently unavailable (Rate limited or error).");
     }
   };
 
@@ -133,6 +149,27 @@ export default function ClassicGame({ settings, onExit }: Props) {
             >
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
               <p className="text-slate-500">The host is preparing a question...</p>
+            </motion.div>
+          ) : error ? (
+            <motion.div 
+              key="error"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="flex-1 flex flex-col items-center justify-center text-center gap-4"
+            >
+              <AlertTriangle className="w-12 h-12 text-red-500" />
+              <h2 className="text-xl font-bold text-slate-800">Connection Interrupted</h2>
+              <p className="text-slate-600 max-w-md">
+                We hit a snag communicating with the AI Host. It might be rate limited. 
+                <br /><br />
+                <span className="text-xs text-slate-400 font-mono break-all">{error}</span>
+              </p>
+              <button 
+                onClick={fetchQuestion}
+                className="mt-4 flex items-center justify-center gap-2 bg-slate-800 text-white px-6 py-3 rounded-xl hover:bg-slate-700 font-semibold"
+              >
+                <RefreshCcw className="w-5 h-5" />
+                Retry Question
+              </button>
             </motion.div>
           ) : question ? (
             <motion.div 

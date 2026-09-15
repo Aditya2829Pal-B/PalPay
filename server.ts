@@ -62,7 +62,9 @@ Return the result in JSON format matching the following schema.`;
       res.json(data);
     } catch (error: any) {
       console.error("Error generating trivia:", error);
-      res.status(500).json({ error: error.message });
+      const status = error.status === 'RESOURCE_EXHAUSTED' || error.status === 429 ? 429 : 500;
+      const message = error.message || "An error occurred while generating the question.";
+      res.status(status).json({ error: message });
     }
   });
 
@@ -92,7 +94,9 @@ Return the result in JSON format matching the following schema.`;
       }
     } catch (error: any) {
       console.error("Error generating TTS:", error);
-      res.status(500).json({ error: error.message });
+      const status = error.status === 'RESOURCE_EXHAUSTED' || error.status === 429 ? 429 : 500;
+      const message = error.message || "An error occurred while generating TTS.";
+      res.status(status).json({ error: message });
     }
   });
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GameSettings } from '../types';
 import { pcmToBase64, base64ToPcm } from '../lib/audioUtils';
-import { Mic, MicOff, PhoneOff, Loader2 } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Loader2, AlertTriangle } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface Props {
   settings: GameSettings;
@@ -12,6 +13,7 @@ export default function LiveGame({ settings, onExit }: Props) {
   const [isConnected, setIsConnected] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isConnecting, setIsConnecting] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const inputAudioCtxRef = useRef<AudioContext | null>(null);
@@ -74,6 +76,12 @@ export default function LiveGame({ settings, onExit }: Props) {
         ws.onmessage = (event) => {
           const msg = JSON.parse(event.data);
           
+          if (msg.error) {
+             setError(msg.error);
+             setIsConnecting(false);
+             return;
+          }
+
           if (msg.interrupted) {
             // Stop current playback and clear queue
             nextStartTimeRef.current = outputCtx.currentTime;
@@ -97,14 +105,16 @@ export default function LiveGame({ settings, onExit }: Props) {
         ws.onclose = () => {
           if (active) {
             setIsConnected(false);
-            onExit();
+            if (!error) {
+              onExit();
+            }
           }
         };
-      } catch (err) {
+      } catch (err: any) {
         console.error("Live call failed to start", err);
         if (active) {
+          setError(err.message || "Microphone access denied or connection failed.");
           setIsConnecting(false);
-          onExit();
         }
       }
     };
@@ -120,7 +130,7 @@ export default function LiveGame({ settings, onExit }: Props) {
       if (inputAudioCtxRef.current) inputAudioCtxRef.current.close();
       if (outputAudioCtxRef.current) outputAudioCtxRef.current.close();
     };
-  }, [settings, onExit]);
+  }, [settings, onExit, error]);
 
   const toggleMic = () => {
     if (mediaStreamRef.current) {

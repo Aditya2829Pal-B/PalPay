@@ -154,8 +154,9 @@ Return the result in JSON format matching the following schema.`;
           (session as any).close();
         }
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Live API connection failed", e);
+      clientWs.send(JSON.stringify({ error: e.message || "Connection failed" }));
       clientWs.close();
     }
   });

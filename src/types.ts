@@ -1,4 +1,4 @@
-export type GameMode = 'setup' | 'classic' | 'live';
+export type GameMode = 'setup' | 'classic' | 'live' | 'p2p_transfer';
 
 export interface GameSettings {
   personality: string;

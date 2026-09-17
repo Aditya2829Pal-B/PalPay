@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { GameMode, GameSettings } from '../types';
-import { Play, Mic } from 'lucide-react';
+import { Play, Mic, QrCode } from 'lucide-react';
 import Scoreboard from './Scoreboard';
 
 interface Props {
-  onStart: (mode: GameMode, settings: GameSettings) => void;
+  onStart: (mode: GameMode, settings?: GameSettings) => void;
 }
 
 const PERSONALITIES = [
@@ -26,7 +26,17 @@ export default function SetupScreen({ onStart }: Props) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 text-slate-800 p-6 font-sans">
       <div className="w-full max-w-xl bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-        <h1 className="text-3xl font-bold text-center mb-8 tracking-tight">AI Trivia Master</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">AI Trivia Master</h1>
+          <button 
+            onClick={() => onStart('p2p_transfer')}
+            className="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-colors flex items-center gap-2 text-sm font-medium"
+            title="P2P Transfer"
+          >
+            <QrCode className="w-5 h-5" />
+            <span className="hidden sm:inline">Pay Host</span>
+          </button>
+        </div>
         
         <div className="space-y-6">
           <div className="space-y-2">
